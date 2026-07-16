@@ -9,6 +9,40 @@ A lightweight, robust Python daemon that runs as a system service on a Raspberry
 
 ---
 
+## 🔌 Hardware & Physical Setup
+
+This project uses a standard 5V or 12V brushless DC cooling fan controlled via a **GPIO pin** on the Raspberry Pi. 
+
+> ⚠️ **IMPORTANT:** Do not connect the fan's power wire directly to a Raspberry Pi GPIO pin! GPIO pins can only safely output about 16mA of current, whereas a fan requires 100mA+. Always use a **transistor (like a PN2222)** or a **relay module** as a switch to protect your Pi.
+
+### Typical Wiring Diagram (Using an NPN Transistor)
+
+```text
+       [5V or 3.3V Pin] --------------> Fan (+)
+                                         
+       [GPIO Pin 14] ----[ 1kΩ Resistor ]----> Base (Middle Pin of Transistor)
+                                         
+       [GND Pin] ----------------------------> Emitter (Right Pin of Transistor)
+                                         
+       Fan (-) ------------------------------> Collector (Left Pin of Transistor)
+```
+
+### Raspberry Pi Pin Reference Table
+
+By default, this script is configured to use physical pinouts based on the standard **BCM (Broadcom) numbering**:
+
+| Component | Physical Pin | BCM Pin | Description |
+| :--- | :--- | :--- | :--- |
+| **Fan VCC (+)** | Pin 2 or 4 | **5V Power** | Supplies power to the fan. (Use Pin 1 for 3.3V fans). |
+| **Fan GND (-)** | Pin 6 (or any GND) | **Ground** | System ground. |
+| **Control Signal** | Pin 8 | **GPIO 14 (TXD)** | Sends the ON/OFF signal to the transistor base or relay trigger. |
+
+*(Note: You can change the control pin to any free GPIO by editing the `GPIO_PIN` variable in your custom `config.py` file).*
+
+---
+
+---
+
 ## 🛠️ Installation & Setup
 
 ### 1. Clone & Configure
@@ -73,20 +107,20 @@ Add these entries to map the incoming MQTT JSON streams to native Home Assistant
 ```yaml
 mqtt:
   binary_sensor:
-    - name: "Bobby Fan Main"
+    - name: "rpi Fan Main"
       state_topic: "rpi/fan"
       value_template: "{{ value_json.status }}"
       payload_on: "on"
       payload_off: "off"
-      unique_id: "bobby_rpi_fan_v3"
+      unique_id: "rpi_rpi_fan_v3"
 
   sensor:
-    - name: "Bobby Temperature"
+    - name: "rpi Temperature"
       state_topic: "rpi/fan"
       value_template: "{{ value_json.temp }}"
       unit_of_measurement: "°C"
       device_class: temperature
-      unique_id: "bobby_cpu_temp_v3"
+      unique_id: "rpi_cpu_temp_v3"
 ```
 
 ### Frontend Dashboard (`Mushroom Template Card`)
@@ -94,14 +128,14 @@ Add a Mushroom card to your dashboard to display the dynamic state:
 
 ```yaml
 type: custom:mushroom-template-card
-primary: Bobby Fan
+primary: rpi Fan
 secondary: >-
-  Status: {{ states('binary_sensor.bobby_fan_main') | title }} | {{ states('sensor.bobby_temperature') }}°C
+  Status: {{ states('binary_sensor.rpi_fan_main') | title }} | {{ states('sensor.rpi_temperature') }}°C
 icon: >-
-  {% if is_state('binary_sensor.bobby_fan_main', 'on') %} mdi:fan {% else %} mdi:fan-off {% endif %}
+  {% if is_state('binary_sensor.rpi_fan_main', 'on') %} mdi:fan {% else %} mdi:fan-off {% endif %}
 icon_color: >-
-  {% if is_state('binary_sensor.bobby_fan_main', 'on') %} green {% else %} blue {% endif %}
-entity: binary_sensor.bobby_fan_main
+  {% if is_state('binary_sensor.rpi_fan_main', 'on') %} green {% else %} blue {% endif %}
+entity: binary_sensor.rpi_fan_main
 tap_action:
   action: more-info
 ```
