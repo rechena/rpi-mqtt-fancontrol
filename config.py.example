@@ -1,0 +1,12 @@
+# MQTT Broker Settings
+MQTT_BROKER = "192.168.1.XX"  # Your Home Assistant / Mosquitto Broker IP
+MQTT_USER = "your_username"
+MQTT_PASSWORD = "your_password"
+
+# Hardware Settings
+GPIO_PIN = 14  # GPIO pin connected to the fan relay/transistor
+
+# Thermal Rules (in °C)
+ON_THRESHOLD = 65.0
+OFF_THRESHOLD = 55.0
+SLEEP_INTERVAL = 5  # Check and publish frequency in seconds
