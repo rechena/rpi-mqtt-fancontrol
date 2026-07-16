@@ -41,8 +41,6 @@ By default, this script is configured to use physical pinouts based on the stand
 
 ---
 
----
-
 ## 🛠️ Installation & Setup
 
 ### 1. Clone & Configure
