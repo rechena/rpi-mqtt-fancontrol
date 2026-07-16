@@ -4,8 +4,8 @@ A lightweight, robust Python daemon that runs as a system service on a Raspberry
 
 ## 🚀 Features
 * **Automated Thermal Control:** Smart fan triggers based on high/low threshold limits.
-* **Resilient MQTT Engine:** Uses native Paho-MQTT reconnect protocols to survive Wi-Fi drops and Home Assistant restarts.
-* **Continuous State Telemetry:** Streams updates continuously (even when the fan is idle or off) so your Home Assistant dashboard never goes stale.
+* **Resilient MQTT Engine:** Uses native Paho-MQTT reconnect protocols and a Last Will & Testament (LWT) topic to recover gracefully from network drops or restarts.
+* **Continuous State Telemetry:** Streams updates continuously (even when the fan is idle or off) so your Home Assistant dashboard never goes stale or freezes.
 
 ---
 
@@ -13,14 +13,14 @@ A lightweight, robust Python daemon that runs as a system service on a Raspberry
 
 This project uses a standard 5V or 12V brushless DC cooling fan controlled via a **GPIO pin** on the Raspberry Pi. 
 
-> ⚠️ **IMPORTANT:** Do not connect the fan's power wire directly to a Raspberry Pi GPIO pin! GPIO pins can only safely output about 16mA of current, whereas a fan requires 100mA+. Always use a **transistor (like a PN2222)** or a **relay module** as a switch to protect your Pi.
+> ⚠️ **IMPORTANT:** Do not connect the fan's power wire directly to a Raspberry Pi GPIO pin! GPIO pins can only safely output about 16mA of current, whereas a fan requires 100mA+. Always use a **transistor (like a PN2222)** or a **relay module** as an electronic switch to protect your Pi.
 
 ### Typical Wiring Diagram (Using an NPN Transistor)
 
 ```text
        [5V or 3.3V Pin] --------------> Fan (+)
                                          
-       [GPIO Pin 14] ----[ 1kΩ Resistor ]----> Base (Middle Pin of Transistor)
+       [GPIO Pin 17] ----[ 1kΩ Resistor ]----> Base (Middle Pin of Transistor)
                                          
        [GND Pin] ----------------------------> Emitter (Right Pin of Transistor)
                                          
@@ -33,13 +33,11 @@ By default, this script is configured to use physical pinouts based on the stand
 
 | Component | Physical Pin | BCM Pin | Description |
 | :--- | :--- | :--- | :--- |
-| **Fan VCC (+)** | Pin 2 or 4 | **5V Power** | Supplies power to the fan. (Use Pin 1 for 3.3V fans). |
+| **Fan VCC (+)** | Pin 2 or 4 | **5V Power** | Supplies power to the fan (Use Pin 1 for 3.3V fans). |
 | **Fan GND (-)** | Pin 6 (or any GND) | **Ground** | System ground. |
-| **Control Signal** | Pin 8 | **GPIO 14 (TXD)** | Sends the ON/OFF signal to the transistor base or relay trigger. |
+| **Control Signal** | Pin 11 | **GPIO 17** | Sends the ON/OFF signal to the transistor base or relay. |
 
 *(Note: You can change the control pin to any free GPIO by editing the `GPIO_PIN` variable in your custom `config.py` file).*
-
----
 
 ---
 
@@ -102,7 +100,7 @@ sudo journalctl -u fan_control.service -f
 ## 🏠 Home Assistant Integration
 
 ### Backend Configuration (`configuration.yaml`)
-Add these entries to map the incoming MQTT JSON streams to native Home Assistant entities:
+Add these entries to map the incoming MQTT JSON streams and status topics to native Home Assistant entities:
 
 ```yaml
 mqtt:
@@ -112,6 +110,9 @@ mqtt:
       value_template: "{{ value_json.status }}"
       payload_on: "on"
       payload_off: "off"
+      availability_topic: "rpi/fan/status"
+      payload_available: "online"
+      payload_not_available: "offline"
       unique_id: "rpi_rpi_fan_v3"
 
   sensor:
@@ -120,6 +121,9 @@ mqtt:
       value_template: "{{ value_json.temp }}"
       unit_of_measurement: "°C"
       device_class: temperature
+      availability_topic: "rpi/fan/status"
+      payload_available: "online"
+      payload_not_available: "offline"
       unique_id: "rpi_cpu_temp_v3"
 ```
 
