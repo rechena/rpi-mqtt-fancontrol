@@ -57,7 +57,7 @@ cp config.py.example config.py
 
 Open `config.py` and fill in your MQTT broker details, credentials, and GPIO configurations:
 ```bash
-nano config.py
+vim config.py
 ```
 
 ### 2. Install Dependencies
